@@ -35,7 +35,7 @@ def label_array(x):
     return y
 
 
-def two_d_plot(x, y, title='', x_label = ''):
+def two_d_plot(x, y, title='', x_label=''):
     fig, ax = plt.subplots()
     plt.scatter(x, y, cmap='plasma')
     plt.title(title)
@@ -65,6 +65,10 @@ elif initialization == 'zeros':
 
 # train
 
+plot_data = np.zeros_like(train_labels)
+correct_pred = 0
+index = 0
+
 for (vect_in, label) in zip(train_images, train_labels):
     #shape data
     vect_in = vect_in.flatten()
@@ -75,9 +79,23 @@ for (vect_in, label) in zip(train_images, train_labels):
     out = normalize(out)
     cost = out - label_vect
 
+    #get data on learning quality
+    pred = np.argmax(out)
+    if (label == pred):
+        plot_data[index] = 1
+        correct_pred += 1
+    else:
+        plot = 0
+    index += 1
+
     # gradient descent
     weights -= (np.outer(vect_in, cost) * l_rate)
     biases -= (cost * l_rate)
+
+plot_data_avg = avg_every_x(plot_data, 100)
+x_axis = np.arange(0, plot_data.size, 100)
+
+two_d_plot(x_axis, plot_data_avg, 'learning', 'test iter')
 
 # test
 
@@ -101,7 +119,7 @@ for (vect_in, label) in zip(test_images, test_labels):
         correct_pred += 1
     else:
         plot = 0
-    
+
     index += 1
 
 plot_data_avg = avg_every_x(plot_data, 100)

@@ -2,6 +2,12 @@ largely informed by:
 
 https://towardsdatascience.com/understanding-the-mathematics-behind-gradient-descent-dde5dc9be06e
 
+ways to go:
+1) add more layers
+2) use 3d to take in 2d image down to output vector. skips flatten step.
+3) make it work when initialized as zero?
+
+
 we know what the loss function is, it's:
 sum(ground truth - nets output)
 but how do we take the derivative of this across so 
