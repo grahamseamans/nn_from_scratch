@@ -34,14 +34,17 @@ def label_array(x):
     return y
 
 
-def two_d_plot(x, y):
+def two_d_plot(x, y, title = ''):
     fig, ax = plt.subplots()
     plt.scatter(x, y, cmap='plasma')
+    plt.title(title)
 
+def avg_every_x(arr, x):
+    return np.mean(arr.reshape(-1, x), axis=1)
 
 avg_weight_init, std_weight_init = 0, .1
 l_rate = .0001
-ITERATIONS = np.arange(10)
+ITERATIONS = np.arange(1000)
 initialization = 'normal'
 
 # train_images = idx2numpy.convert_from_file('./MNIST/t10k-images-idx3-ubyte')
@@ -56,7 +59,10 @@ elif initialization == 'zeros':
     weights = np.zeros((784, 10))
     biases = np.zeros((10, ))
 
-plot_data = []
+plot_data = np.zeros(ITERATIONS.shape)
+correct_pred = 0
+
+# train
 
 for (vect_in, label, i) in zip(test_images, test_labels, ITERATIONS):
     vect_in = vect_in.flatten()
@@ -68,14 +74,19 @@ for (vect_in, label, i) in zip(test_images, test_labels, ITERATIONS):
 
     pred = np.argmax(out)
     if (label == pred):
-        plot_data.append(1)
+        plot_data[i] = 1
+        correct_pred += 1
     else:
-        plot_data.append(0)
+        plot_data[i] = 0
 
     cost = out - label_vect
 
     weights -= (np.outer(vect_in, cost) * l_rate)
     biases -= (cost * l_rate)
 
-# two_d_plot(ITERATIONS, plot_data)
-plt.scatter(ITERATIONS, plot_data, marker='o')
+
+plot_data_10_avg = avg_every_x(plot_data, 10)
+ITERATIONS_10_avg = avg_every_x(ITERATIONS, 10)
+
+title = 'correct prediction rate: ' + str(correct_pred / ITERATIONS.size)
+two_d_plot(ITERATIONS_10_avg, plot_data_10_avg, title)

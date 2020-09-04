@@ -26,4 +26,5 @@ for biases:
 bases is [10,1] error is [10,1] l_rate is scalar
 bias1 = bias0 - (error * l_rate)
 
-leibnitz 
+leibnitz is really confusing. especially for the chain rule.
+wish i had a math person to talk to.
