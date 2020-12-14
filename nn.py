@@ -17,14 +17,14 @@ def layer_process(vect_in, weights, biases):
 def relu(x):
     x *= x > 0
 
-
+'''
 def normalize(x):
     denom = max(x) - min(x)
     if denom == 0:
         return 0
     else:
         return (x - min(x)) / denom
-
+'''
 
 def label_array(x):
     y = np.zeros(10)
@@ -74,7 +74,7 @@ plot_data = np.zeros_like(train_labels)
 correct_pred = 0
 index = 0
 
-for (vect_in, label) in zip(train_images, train_labels):
+for i, (vect_in, label) in enumerate(zip(train_images, train_labels)):
     # shape data
     vect_in = vect_in.flatten()
     label_vect = label_array(label)
@@ -82,11 +82,14 @@ for (vect_in, label) in zip(train_images, train_labels):
     # process the data
     out2 = layer_process(vect_in, weights2, biases2)
     out1 = layer_process(out2, weights1, biases1)
-    out1 = normalize(out1)
-    cost = out - label_vect
+    # already sigmoided, why normalize? maybe for relu?
+    # out1 = normalize(out1)
+    if i % 1000 == 0:
+        [print(out1)]
+    cost = out1 - label_vect
 
     # get data on learning quality
-    pred = np.argmax(out)
+    pred = np.argmax(out1)
     if label == pred:
         plot_data[index] = 1
         correct_pred += 1
@@ -116,18 +119,27 @@ for (vect_in, label) in zip(train_images, train_labels):
     dnet/dbx = 1
 
     """
+
     # gradient descent
 
-    # dE_dnet = cost * out1(1 - out1)
-    weights1 -= l_rate * np.outer(out2, cost * out1(1 - out1))
-    biases1 -= l_rate * cost * out1(1 - out1)
-    
-    
-    #out = np.matmul(vect_in, weights)
-    dE_ds2 = np.matmul(weights1, cost * out1(1 - out1))
 
-    weights2 -= l_rate * np.outer(out2, dE_ds2 * out2(1-out2))
-    biases2 -= l_rate * cost
+    """
+    weights -= (np.outer(vect_in, cost) * l_rate)
+    biases -= (cost * l_rate)
+
+    """
+
+    dE_dnet = cost * np.multiply(out1, np.subtract(1, out1))
+
+    weights1 -= l_rate * np.outer(out2, dE_dnet)
+    biases1 -= l_rate * dE_dnet
+
+    # out = np.matmul(vect_in, weights)
+    dE_ds2 = np.matmul(weights1, dE_dnet)
+    ds_dnet2 = np.multiply(out2, np.subtract(1, out2))
+
+    weights2 -= l_rate * np.outer(vect_in, dE_ds2 * ds_dnet2)
+    biases2 -= l_rate * dE_ds2 * ds_dnet2
 
 plot_data_avg = avg_every_x(plot_data, 100)
 x_axis = np.arange(0, plot_data.size, 100)
@@ -146,11 +158,12 @@ for (vect_in, label) in zip(test_images, test_labels):
     label_vect = label_array(label)
 
     # process data
-    out = layer_process(vect_in, weights, biases)
-    out = normalize(out)
+    out2 = layer_process(vect_in, weights2, biases2)
+    out1 = layer_process(out2, weights1, biases1)
+    # out = normalize(out1)
 
     # get data on pred quality
-    pred = np.argmax(out)
+    pred = np.argmax(out1)
     if label == pred:
         plot_data[index] = 1
         correct_pred += 1
