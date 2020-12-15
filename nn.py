@@ -46,8 +46,8 @@ def avg_every_x(arr, x):
 
 # SETUP ----------------------------------------------------
 
-avg_weight_init, std_weight_init = 0, 0.1
-l_rate = 0.0001
+avg_init, std_init = 0, 0.1
+l_rate = 0.005
 # ITERATIONS = np.arange(1000)
 initialization = "zeroes"
 
@@ -56,17 +56,10 @@ test_labels = idx2numpy.convert_from_file("./MNIST/t10k-labels-idx1-ubyte")
 train_images = idx2numpy.convert_from_file("./MNIST/train-images-idx3-ubyte")
 train_labels = idx2numpy.convert_from_file("./MNIST/train-labels-idx1-ubyte")
 
-"""
-if initialization == "norm_dist":
-    weights = np.random.normal(avg_weight_init, std_weight_init, (784, 10))
-    biases = np.random.normal(avg_weight_init, std_weight_init, (10,))
-elif initialization == "zeroes":
-"""
-weights2 = np.zeros((784, 20))
-biases2 = np.zeros((20,))
-weights1 = np.zeros((20, 10))
-biases1 = np.zeros((10,))
-
+weights2 = np.random.normal(avg_init, std_init, (784, 100))
+biases2 = np.random.normal(avg_init, std_init, (100,))
+weights1 = np.random.normal(avg_init, std_init, (100, 10))
+biases1 = np.random.normal(avg_init, std_init, (10,))
 
 # TRAIN -------------------------------------------------------
 
@@ -85,7 +78,8 @@ for i, (vect_in, label) in enumerate(zip(train_images, train_labels)):
     # already sigmoided, why normalize? maybe for relu?
     # out1 = normalize(out1)
     if i % 1000 == 0:
-        [print(out1)]
+        pass
+        #[print(out1)]
     cost = out1 - label_vect
 
     # get data on learning quality
@@ -134,7 +128,6 @@ for i, (vect_in, label) in enumerate(zip(train_images, train_labels)):
     weights1 -= l_rate * np.outer(out2, dE_dnet)
     biases1 -= l_rate * dE_dnet
 
-    # out = np.matmul(vect_in, weights)
     dE_ds2 = np.matmul(weights1, dE_dnet)
     ds_dnet2 = np.multiply(out2, np.subtract(1, out2))
 
