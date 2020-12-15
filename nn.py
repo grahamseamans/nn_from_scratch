@@ -5,26 +5,79 @@ import idx2numpy
 import matplotlib.pyplot as plt
 from scipy.special import expit as sigmoid
 
+avg_init, std_init = 0, 0.1
+l_rate = 0.005
 
-def layer_process(vect_in, weights, biases):
-    out = np.matmul(vect_in, weights)
-    out += biases
-    out = sigmoid(out)
-    # relu(out)
-    return out
+
+class neural_net:
+    def __init__(self):
+        self.layers = []
+        self.read_net()
+
+    def read_net(self):
+        with open("net_shape.txt") as data:
+            for line in data:
+                self.layers.append(layer([int(a) for a in line.split()]))
+
+    def print_layers(self):
+        for layer in self.layers:
+            layer.display()
+
+    def predict(self, vect_in):
+        for layer in reversed(self.layers):
+            vect_in = layer.process(vect_in)
+        return vect_in
+
+    def train(self, cost):
+        prev_layer_chain = cost
+        for layer in self.layers:
+            prev_layer_chain = layer.train(prev_layer_chain)
+
+
+class layer:
+    def __init__(self, args):
+        self.weights = np.random.normal(avg_init, std_init, (args[0], args[1]))
+        self.biases = np.random.normal(avg_init, std_init, (args[1],))
+        self.latest_input = None
+        self.latest_output = None
+
+    def process(self, vect_in):
+        self.latest_input = vect_in
+        out = np.matmul(vect_in, self.weights)
+        out += self.biases
+        out = sigmoid(out)
+        self.latest_output = out
+        return out
+
+    def train(self, prev_layer_chain):
+        # set up current layer
+        ds_dnet = np.multiply(self.latest_output, np.subtract(1, self.latest_output))
+        layer_chain = prev_layer_chain * ds_dnet
+
+        # adjust weights / biases
+        self.weights -= l_rate * np.outer(self.latest_input, layer_chain)
+        self.biases -= l_rate * layer_chain
+
+        # setup for next layer
+        layer_chain = np.matmul(self.weights, layer_chain)
+        return layer_chain
+
+    def display(self):
+        print(self.weights)
+        print(self.biases)
 
 
 def relu(x):
     x *= x > 0
 
-'''
+
 def normalize(x):
     denom = max(x) - min(x)
     if denom == 0:
         return 0
     else:
         return (x - min(x)) / denom
-'''
+
 
 def label_array(x):
     y = np.zeros(10)
@@ -46,26 +99,23 @@ def avg_every_x(arr, x):
 
 # SETUP ----------------------------------------------------
 
-avg_init, std_init = 0, 0.1
-l_rate = 0.005
-# ITERATIONS = np.arange(1000)
-initialization = "zeroes"
-
 test_images = idx2numpy.convert_from_file("./MNIST/t10k-images-idx3-ubyte")
 test_labels = idx2numpy.convert_from_file("./MNIST/t10k-labels-idx1-ubyte")
 train_images = idx2numpy.convert_from_file("./MNIST/train-images-idx3-ubyte")
 train_labels = idx2numpy.convert_from_file("./MNIST/train-labels-idx1-ubyte")
 
-weights2 = np.random.normal(avg_init, std_init, (784, 100))
-biases2 = np.random.normal(avg_init, std_init, (100,))
-weights1 = np.random.normal(avg_init, std_init, (100, 10))
-biases1 = np.random.normal(avg_init, std_init, (10,))
 
-# TRAIN -------------------------------------------------------
-
-plot_data = np.zeros_like(train_labels)
+avg_init, std_init = 0, 0.1
+l_rate = 0.005
+initialization = "zeroes"
 correct_pred = 0
 index = 0
+plot_data = np.zeros_like(train_labels)
+
+
+net = neural_net()
+
+# TRAIN -------------------------------------------------------
 
 for i, (vect_in, label) in enumerate(zip(train_images, train_labels)):
     # shape data
@@ -73,17 +123,10 @@ for i, (vect_in, label) in enumerate(zip(train_images, train_labels)):
     label_vect = label_array(label)
 
     # process the data
-    out2 = layer_process(vect_in, weights2, biases2)
-    out1 = layer_process(out2, weights1, biases1)
-    # already sigmoided, why normalize? maybe for relu?
-    # out1 = normalize(out1)
-    if i % 1000 == 0:
-        pass
-        #[print(out1)]
-    cost = out1 - label_vect
+    out = net.predict(vect_in)
 
     # get data on learning quality
-    pred = np.argmax(out1)
+    pred = np.argmax(out)
     if label == pred:
         plot_data[index] = 1
         correct_pred += 1
@@ -93,46 +136,10 @@ for i, (vect_in, label) in enumerate(zip(train_images, train_labels)):
         plot = 0
     index += 1
 
-    """
-    dE/db1 = dE/ds*ds/dnet*dnet/db1
-    dE/dw1 = dE/ds*ds/dnet*dnet/dw1
-    dE/db2 = dE/ds*ds/dnet*dnet/ds*ds/dnet*dnet/db2
-    dE/dw2 = dE/ds*ds/dnet*dnet/ds*ds/dnet*dnet/dw2
-
-    out_x = output of layer x
-    out = output of net
-    w_x = weights of layer x
-    in_x = input of layer x
-    label = labeled data, target
-
-    so the terms are:
-    dE/ds = -(label - out), - cost
-    ds/dnet = out_x(1 - out_x)
-    dnet/ds = w_x
-    dnet/dwx = in_x
-    dnet/dbx = 1
-
-    """
-
     # gradient descent
 
-
-    """
-    weights -= (np.outer(vect_in, cost) * l_rate)
-    biases -= (cost * l_rate)
-
-    """
-
-    dE_dnet = cost * np.multiply(out1, np.subtract(1, out1))
-
-    weights1 -= l_rate * np.outer(out2, dE_dnet)
-    biases1 -= l_rate * dE_dnet
-
-    dE_ds2 = np.matmul(weights1, dE_dnet)
-    ds_dnet2 = np.multiply(out2, np.subtract(1, out2))
-
-    weights2 -= l_rate * np.outer(vect_in, dE_ds2 * ds_dnet2)
-    biases2 -= l_rate * dE_ds2 * ds_dnet2
+    cost = out - label_vect
+    net.train(cost)
 
 plot_data_avg = avg_every_x(plot_data, 100)
 x_axis = np.arange(0, plot_data.size, 100)
@@ -151,12 +158,10 @@ for (vect_in, label) in zip(test_images, test_labels):
     label_vect = label_array(label)
 
     # process data
-    out2 = layer_process(vect_in, weights2, biases2)
-    out1 = layer_process(out2, weights1, biases1)
-    # out = normalize(out1)
+    out = net.predict(vect_in)
 
     # get data on pred quality
-    pred = np.argmax(out1)
+    pred = np.argmax(out)
     if label == pred:
         plot_data[index] = 1
         correct_pred += 1
