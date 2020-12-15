@@ -4,9 +4,8 @@ import numpy as np
 import idx2numpy
 import matplotlib.pyplot as plt
 from scipy.special import expit as sigmoid
-
-avg_init, std_init = 0, 0.1
-l_rate = 0.005
+import cProfile
+import pstats
 
 
 class neural_net:
@@ -74,7 +73,7 @@ def relu(x):
 def normalize(x):
     denom = max(x) - min(x)
     if denom == 0:
-        return 0
+        return np.zeros_like(x)
     else:
         return (x - min(x)) / denom
 
@@ -101,7 +100,10 @@ train_images = idx2numpy.convert_from_file("./MNIST/train-images-idx3-ubyte")
 train_labels = idx2numpy.convert_from_file("./MNIST/train-labels-idx1-ubyte")
 
 avg_init, std_init = 0, 0.1
-l_rate = 0.005
+l_rate = 0.001
+
+profiler = cProfile.Profile()
+profiler.enable()
 
 net = neural_net()
 
@@ -110,6 +112,7 @@ net = neural_net()
 for (vect_in, label) in zip(train_images, train_labels):
     # shape data
     vect_in = vect_in.flatten()
+    vect_in = normalize(vect_in)
     label_vect = label_array(label)
 
     # process the data
@@ -126,6 +129,7 @@ correct_pred = 0
 for (vect_in, label) in zip(test_images, test_labels):
     # shape data
     vect_in = vect_in.flatten()
+    vect_in = normalize(vect_in)
     label_vect = label_array(label)
 
     # process data
@@ -135,7 +139,9 @@ for (vect_in, label) in zip(test_images, test_labels):
     pred = np.argmax(out)
     if label == pred:
         correct_pred += 1
-    else:
-        plot = 0
+
+profiler.disable()
+stats = pstats.Stats(profiler)
+stats.strip_dirs().sort_stats("tottime").print_stats(10)
 
 print("correct prediction rate: " + str(correct_pred / test_labels.size))

@@ -132,27 +132,7 @@ dE/dw1 = dE/ds*ds/dnet*dnet/dw1
 dE/db2 = dE/ds*ds/dnet*dnet/ds*ds/dnet*dnet/db2
 dE/dw2 = dE/ds*ds/dnet*dnet/ds*ds/dnet*dnet/db2
 
-tomorrow let's make a branch and try this out with a two layer!
-
-first:
-	check the math again, make sure it all makes sense.
-		makes sense!
-	figure out what linear albegra you're gong to need,
-	can eveyrthing be np.outer, or will you need 
-	something else?
-		Okay so when going from the output size of a layer
-		to the layers weights you need to use np.outer.
-		When going from output to weights you dont need
-		to do anything.
-		
-
-second:
-	git branch and code away, see if you can get above 
-	your current accuracy of ~ 80%
-
 --------------------------------------------------
-
-(mostly) derived at the link above:
 
 out_x = output of layer x
 out = output of net
@@ -189,8 +169,9 @@ Then we want to generalize the layers so we can parameterize them.
 Then we want to code up the generalization of the layers.
 
 
-profit?
+profit? - no :(
 
+--------------------------------------------------
 
 
 dE_dnet = cost * np.multiply(out1, np.subtract(1, out1))
@@ -212,8 +193,8 @@ dE_dnet = cost * np.multiply(out1, np.subtract(1, out1))
         layer_chain = prev_layer_chain * ds_dnet
 
         # adjust weights / biases
-        weights2 -= l_rate * np.outer(layer_input, layer_chain)
-        biases2 -= l_rate * layer_chain
+        weights -= l_rate * np.outer(layer_input, layer_chain)
+        biases -= l_rate * layer_chain
 
         # setup for next layer
         layer_chain = np.matmul(self.weights, layer_chain)
@@ -249,5 +230,24 @@ dE_dnet = cost * np.multiply(out1, np.subtract(1, out1))
     dnet/ds = w_x
     dnet/dwx = in_x
     dnet/dbx = 1
+
+
+--------------------------------------------------
+
+so we want to try mini batches?
+
+it seems like the thing to do for batches is to take the error
+over batch_size and then average that, and then do gradient 
+descent with that average error. 
+
+This seems weird, but doable form this standpoint, but 
+what about the layer_in and layer_out that's used in the 
+derivative of the sigmoid function?
+
+could i average these as well? If i do they will basically
+become noise most likely, which I guess is okay?
+But then why include them? I guess that they might have
+an overall flavor that can be adjusted for, that is
+the point of these mini batches, so yea lets try that out.
 
 
