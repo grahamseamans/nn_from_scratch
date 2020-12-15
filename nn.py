@@ -24,13 +24,13 @@ class neural_net:
             layer.display()
 
     def predict(self, vect_in):
-        for layer in reversed(self.layers):
+        for layer in self.layers:
             vect_in = layer.process(vect_in)
         return vect_in
 
     def train(self, cost):
         prev_layer_chain = cost
-        for layer in self.layers:
+        for layer in reversed(self.layers):
             prev_layer_chain = layer.train(prev_layer_chain)
 
 
@@ -93,10 +93,6 @@ def two_d_plot(x, y, title="", x_label=""):
     plt.plot()
 
 
-def avg_every_x(arr, x):
-    return np.mean(arr.reshape(-1, x), axis=1)
-
-
 # SETUP ----------------------------------------------------
 
 test_images = idx2numpy.convert_from_file("./MNIST/t10k-images-idx3-ubyte")
@@ -104,20 +100,14 @@ test_labels = idx2numpy.convert_from_file("./MNIST/t10k-labels-idx1-ubyte")
 train_images = idx2numpy.convert_from_file("./MNIST/train-images-idx3-ubyte")
 train_labels = idx2numpy.convert_from_file("./MNIST/train-labels-idx1-ubyte")
 
-
 avg_init, std_init = 0, 0.1
 l_rate = 0.005
-initialization = "zeroes"
-correct_pred = 0
-index = 0
-plot_data = np.zeros_like(train_labels)
-
 
 net = neural_net()
 
 # TRAIN -------------------------------------------------------
 
-for i, (vect_in, label) in enumerate(zip(train_images, train_labels)):
+for (vect_in, label) in zip(train_images, train_labels):
     # shape data
     vect_in = vect_in.flatten()
     label_vect = label_array(label)
@@ -125,32 +115,13 @@ for i, (vect_in, label) in enumerate(zip(train_images, train_labels)):
     # process the data
     out = net.predict(vect_in)
 
-    # get data on learning quality
-    pred = np.argmax(out)
-    if label == pred:
-        plot_data[index] = 1
-        correct_pred += 1
-    else:
-        # replace below with me?
-        # plot_data[index] = 0
-        plot = 0
-    index += 1
-
     # gradient descent
-
     cost = out - label_vect
     net.train(cost)
 
-plot_data_avg = avg_every_x(plot_data, 100)
-x_axis = np.arange(0, plot_data.size, 100)
-
-two_d_plot(x_axis, plot_data_avg, "learning", "test iter")
-
 # TEST -------------------------------------------------------
 
-plot_data = np.zeros_like(test_labels)
 correct_pred = 0
-index = 0
 
 for (vect_in, label) in zip(test_images, test_labels):
     # shape data
@@ -163,17 +134,8 @@ for (vect_in, label) in zip(test_images, test_labels):
     # get data on pred quality
     pred = np.argmax(out)
     if label == pred:
-        plot_data[index] = 1
         correct_pred += 1
     else:
         plot = 0
 
-    index += 1
-
-plot_data_avg = avg_every_x(plot_data, 100)
-x_axis = np.arange(0, plot_data.size, 100)
-
-title = "correct prediction rate: " + str(correct_pred / test_labels.size)
-two_d_plot(x_axis, plot_data_avg, title, "test iter")
-
-print(title)
+print("correct prediction rate: " + str(correct_pred / test_labels.size))
