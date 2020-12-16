@@ -252,3 +252,22 @@ the point of these mini batches, so yea lets try that out.
 
 --------------------------------------------------
 
+what's after mini-batches?
+
+Things to think about:
+	the activation derivative almost never helps, but
+	I think I might keep it around just because
+	relu derivative = 0 =< 0, 1 > 0
+
+	I might move the layer in/out over to the net
+	class becasue it's eating up space and processing
+	so be storing things so much extra. I'm pretty 
+	sure that encapsulation would say to stick the 
+	i/o in the layers (each layer manages their own io)
+	but this runs pretty slow as is and I'd like 
+	it to be faster...
+
+implement relu derivative
+push io sotrage up to net class
+
+--------------------------------------------------

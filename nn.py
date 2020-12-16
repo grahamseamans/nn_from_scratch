@@ -10,13 +10,14 @@ import pickle
 
 avg_init, std_init = 0, 0.1
 l_rate = 0.001
-batch_size = 10
-epochs = 5
+batch_size = 5
+epochs = 20
 
 
 class neural_net:
     def __init__(self, learning_rate):
         self.layers = []
+        self.layerio = []
         self.read_net()
         self.l_rate = learning_rate
 
@@ -24,20 +25,38 @@ class neural_net:
         with open("net_shape.txt") as data:
             for line in data:
                 self.layers.append(layer(line.split(), l_rate))
+                self.layerio.append(0)
+            self.layerio.append(0)
 
     def print_layers(self):
         for layer in self.layers:
             layer.display()
 
     def predict(self, vect_in):
+        i = 0
         for layer in self.layers:
+            self.layerio[i] = np.add(vect_in, self.layerio[i])
             vect_in = layer.process(vect_in)
+            i += 1
+        self.layerio[i] = np.add(vect_in, self.layerio[i])
         return vect_in
 
     def train(self, cost, batch_size):
+        # avg and reverse layers io
+        self.layerio.reverse()
+        for i in range(len(self.layerio)):
+            self.layerio[i] = np.divide(self.layerio[i], batch_size)
+
         prev_layer_chain = cost
-        for layer in reversed(self.layers):
-            prev_layer_chain = layer.train(prev_layer_chain, batch_size)
+
+        for i, layer in enumerate(reversed(self.layers)):
+            prev_layer_chain = layer.train(
+                prev_layer_chain, batch_size, self.layerio[i], self.layerio[i + 1]
+            )
+
+        # wipe for next batch
+        for i in range(len(self.layerio)):
+            self.layerio[i] = 0
 
 
 class layer:
@@ -54,53 +73,36 @@ class layer:
         self.latest_output = 0
 
     def process(self, vect_in):
-        self.latest_input = np.add(vect_in, self.latest_input)
         out = np.matmul(vect_in, self.weights)
         out += self.biases
-
         if self.activation == "relu":
             out[out < 0] = 0
         else:
             out = sigmoid(out)
-
-        self.latest_output = np.add(out, self.latest_output)
         return out
 
-    def train(self, prev_layer_chain, batch_size):
-        # average inputs and outputs for batches
-        self.latest_input = np.divide(self.latest_input, batch_size)
-        self.latest_output = np.divide(self.latest_output, batch_size)
+    def train(self, prev_layer_chain, batch_size, l_out, l_in):
+        # derivative of the activation function ds/dnet
+        if self.activation == "relu":
+            ds_dnet = l_out
+            ds_dnet[ds_dnet <= 0] = 0
+            ds_dnet[ds_dnet > 0] = 1
+        else:
+            ds_dnet = np.multiply(l_out, np.subtract(1, l_out))
 
-        # set up current layer
-        # commented out the derivative for the activation funciton
-        # predictions are worse worse with it.
-        # ds_dnet = np.multiply(self.latest_output, np.subtract(1, self.latest_output))
-        layer_chain = prev_layer_chain # * ds_dnet
+        # adding the activation derivative to the derivative chain
+        layer_chain = prev_layer_chain * ds_dnet
 
-        # adjust weights / biases
-        self.weights -= self.l_rate * np.outer(self.latest_input, layer_chain)
+        # adjust weights / biases using derivative of net and chain
+        self.weights -= self.l_rate * np.outer(l_in, layer_chain)
         self.biases -= self.l_rate * layer_chain
 
-        # setup for next layer
-        layer_chain = np.matmul(self.weights, layer_chain)
-
-        # reset inputs and ouputs
-        self.latest_input = 0
-        self.latest_output = 0
-
-        return layer_chain
+        # derivative of net for activation dnet/da
+        return np.matmul(self.weights, layer_chain)
 
 
 def normalize(x):
     return (x - x.mean()) / x.std()
-
-
-def two_d_plot(x, y, title="", x_label=""):
-    fig, ax = plt.subplots()
-    plt.scatter(x, y, cmap="plasma")
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.plot()
 
 
 # SETUP ----------------------------------------------------
@@ -110,8 +112,10 @@ test_labels = pickle.load(open("./processed_data/test_labels.p", "rb"))
 train_images = pickle.load(open("./processed_data/train_images.p", "rb"))
 train_labels = pickle.load(open("./processed_data/train_labels.p", "rb"))
 
+"""
 profiler = cProfile.Profile()
 profiler.enable()
+"""
 
 net = neural_net(l_rate)
 
@@ -150,8 +154,9 @@ for (input_vector, label) in zip(test_images, test_labels):
     if label == pred:
         correct_pred += 1
 
+"""
 profiler.disable()
 stats = pstats.Stats(profiler)
 stats.strip_dirs().sort_stats("tottime").print_stats(10)
-
+"""
 print("correct prediction rate: " + str(correct_pred / len(test_labels)))
