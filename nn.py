@@ -1,7 +1,6 @@
 # nn.py Graham Seamans
 
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.special import expit as sigmoid
 import cProfile
 import pstats
@@ -10,8 +9,8 @@ import pickle
 
 avg_init, std_init = 0, 0.1
 l_rate = 0.001
-batch_size = 5
-epochs = 20
+batch_size = 10
+epochs = 5
 
 
 class neural_net:
